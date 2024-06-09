@@ -1,0 +1,48 @@
+function doGet(e) {
+  try {
+    const spreadsheetId = '17XXQrE8tSyit6FoTMHkrKtmPTnhHb17G4V-7qLiwOwk';
+    const sheetName = 'Лист1';
+    const sheet = SpreadsheetApp.openById(spreadsheetId).getSheetByName(sheetName);
+
+    if (!sheet) {
+      throw new Error('Sheet not found');
+    }
+
+    const data = sheet.getDataRange().getValues();
+    const headers = data[0];
+    const rows = data.slice(1);
+    const result = rows.map(row => {
+      let obj = {};
+      headers.forEach((header, index) => {
+        obj[header] = row[index];
+      });
+      return obj;
+    });
+
+    const date = e.parameter.date;
+    const startDate = e.parameter.start_date;
+    const endDate = e.parameter.end_date;
+    const realtime = e.parameter.realtime;
+
+    if (date) {
+      const filtered = result.filter(entry => entry['sent'].split(' ')[0] === date);
+      return ContentService.createTextOutput(JSON.stringify(filtered)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (startDate && endDate) {
+      const filtered = result.filter(entry => {
+        const sentDate = new Date(entry['sent']);
+        return sentDate >= new Date(startDate) && sentDate <= new Date(endDate);
+      });
+      return ContentService.createTextOutput(JSON.stringify(filtered)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (realtime) {
+      return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (error) {
+    return ContentService.createTextOutput('Error: ' + error.message);
+  }
+}
